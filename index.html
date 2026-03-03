@@ -37,7 +37,8 @@
   <script src="static/js/bulma-carousel.min.js"></script>
   <script src="static/js/bulma-slider.min.js"></script>
   <script src="static/js/index.js"></script>
-
+  <!-- Umami analytics: replace data-website-id with your real ID -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="0059d3fa-61d3-45b0-9dc6-1e4606319632"></script>
   <style>
     .hero.is-fullheight {
       background-color: #ffffff;
@@ -228,6 +229,14 @@
                           <i class="fab fa-youtube"></i>
                       </span>
                       <span>Video (coming soon)</span>
+                    </a>
+                  </span>
+                  <span class="link-block">
+                    <a href="#" onclick="return false;" class="external-link button is-normal is-rounded is-dark">
+                      <span class="icon">
+                        <i class="fas fa-eye"></i>
+                      </span>
+                      <span>Visits: <span id="view-count">Loading...</span></span>
                     </a>
                   </span>
                 </div>
@@ -961,6 +970,67 @@
     </div>
   </div>
 </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/counterapi/dist/counter.browser.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const counterEl = document.getElementById('view-count');
+      const baseCount = 2243;
+      const localKey = 'hord-local-view-count';
+
+      function showLocalCount() {
+        try {
+          const stored = parseInt(localStorage.getItem(localKey) || '0', 10);
+          const next = (isNaN(stored) ? 0 : stored) + 1;
+          localStorage.setItem(localKey, String(next));
+          if (counterEl) counterEl.textContent = String(baseCount + next - 1);
+        } catch (e) {
+          if (counterEl) counterEl.textContent = String(baseCount);
+        }
+      }
+
+      // Local file preview fallback: do not rely on remote analytics API.
+      if (window.location.protocol === 'file:') {
+        showLocalCount();
+        return;
+      }
+
+      const safetyTimer = setTimeout(function () {
+        if (counterEl && counterEl.textContent === 'Loading...') {
+          showLocalCount();
+        }
+      }, 10000);
+
+      if (typeof Counter === 'undefined') {
+        console.error('CounterAPI SDK failed to load.');
+        clearTimeout(safetyTimer);
+        showLocalCount();
+        return;
+      }
+
+      // CounterAPI config for endpoint: /v2/hord/hord
+      // Do NOT hardcode private API keys in frontend code.
+      const counter = new Counter({
+        workspace: 'hord',
+        timeout: 8000,
+        // accessToken: 'YOUR_API_KEY' // Optional for V2 (unsafe if exposed in public frontend)
+      });
+
+      counter.up('hord')
+        .then(function (result) {
+          clearTimeout(safetyTimer);
+          if (counterEl && typeof result.value === 'number') {
+            const adjusted = baseCount + Math.max(0, result.value - 1);
+            counterEl.textContent = String(adjusted);
+          }
+        })
+        .catch(function (error) {
+          clearTimeout(safetyTimer);
+          console.error('Error tracking page view:', error);
+          showLocalCount();
+        });
+    });
+  </script>
 
   </body>
   </html>
